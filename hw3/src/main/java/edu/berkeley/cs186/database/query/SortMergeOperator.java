@@ -16,7 +16,6 @@ public class SortMergeOperator extends JoinOperator {
            String rightColumnName,
            Database.Transaction transaction) throws QueryPlanException, DatabaseException {
     super(leftSource, rightSource, leftColumnName, rightColumnName, transaction, JoinType.SORTMERGE);
-
   }
 
   public Iterator<Record> iterator() throws QueryPlanException, DatabaseException {

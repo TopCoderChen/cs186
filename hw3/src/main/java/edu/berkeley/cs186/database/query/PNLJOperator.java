@@ -64,16 +64,16 @@ public class PNLJOperator extends JoinOperator {
     /**
      * We're effectively doing the following in the hasNext() function:
      *
-     * for LeftPage in LeftPageIter:
-     *     for RightPage in RightPagerIter:
-     *         For LeftRecord in LeftPage:
-     *             For RightRecord in RightPage:
+     * for LeftPage in LeftPageIter:  // 1st
+     *     for RightPage in RightPagerIter:  // 2nd
+     *         For LeftRecord in LeftPage:  // 3rd
+     *             For RightRecord in RightPage:  // 4th
      *                 check(LeftRecord, RightRecord)
      *
      * If an iterator lower in the nested loops becomes exhausted, we check
-     * if it's parent has more elements. If it does, we just restart the
+     * if it's parent has more elements. If it does, we just **restart** the
      * iterator and advance the parent to the next element. If not, we check
-     * the parent's parent for the same and repeat. If we make it to the top
+     * the **parent's parent** for the same and repeat. If we make it to the top
      * of the nested loop and run out of elements, that means LeftPageIter
      * is exhausted, and we're done.
      */
@@ -93,12 +93,14 @@ public class PNLJOperator extends JoinOperator {
               RBIter = getBlockIterator(getRightTableName(),
                                         new Page[]{currentRightPage});
             } else {
-              // Current left page is exhausted. Restart it with the next
-              // right page (if there is one).
+              // Current left page is exhausted.(3rd loop is exhausted) Restart it with the next
+              // right page (if there is one) (RPIter).
+              // because 2nd loop is above 3rd loop, see comments above
 
               if (!RPIter.hasNext()) {
                 // Right page relation is exhausted. Need to restart it with
                 // LPIter on the next page (if there is one).
+                // because "for LeftRecord in LeftPage:" is above "For RightRecord in RightPage:"
 
                 if (LPIter.hasNext()) {
                   currentLeftPage = LPIter.next();
@@ -106,7 +108,7 @@ public class PNLJOperator extends JoinOperator {
                                             new Page[]{currentLeftPage});
                   assert LBIter.hasNext() : "Need to hasNext() first.";
                   leftRecord = LBIter.next();
-                } else {
+                } else {  // This means the 1st loop is exhausted, we are done
                   // Outermost relation exhausted so we're done.
                   return false;
                 }
@@ -125,6 +127,8 @@ public class PNLJOperator extends JoinOperator {
                                         new Page[]{currentRightPage});
             }
           }
+
+          // Actual join and create new result
           while (RBIter.hasNext()) {
             Record rightRecord = RBIter.next();
             DataBox leftJoinValue = leftRecord.getValues().get(getLeftColumnIndex());
